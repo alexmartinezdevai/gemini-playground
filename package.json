@@ -1,0 +1,28 @@
+{
+  "name": "gemini-playground",
+  "version": "1.0.0",
+  "description": "Learn how to work with the Gemini API and understand the basics of Prompt Engineering.",
+  "main": "index.js",
+  "directories": {
+    "example": "examples"
+  },
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/alexmartinezdevai/gemini-playground.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "module",
+  "bugs": {
+    "url": "https://github.com/alexmartinezdevai/gemini-playground/issues"
+  },
+  "homepage": "https://github.com/alexmartinezdevai/gemini-playground#readme",
+  "dependencies": {
+    "@google/genai": "^2.10.0",
+    "dotenv": "^17.4.2"
+  }
+}
