@@ -49,3 +49,9 @@ Environment variables allow applications to access sensitive data without storin
 Example:
 
 process.env.GEMINI_API_KEYs
+
+## GoogleGenAI Client
+
+The GoogleGenAI client is an object configured with an API Key.
+
+It allows the application to communicate with Gemini models.
