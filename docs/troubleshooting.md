@@ -182,3 +182,120 @@ Use single quotes outside the string if the message contains double quotes.
 ```javascript
 console.log('Type your prompt or "exit" to quit.\n');
 ```
+
+---
+
+# Gemini Does Not Remember Previous Messages
+
+## Problem
+
+The user tells Gemini something, but Gemini does not remember it in the next message.
+
+Example:
+
+```text
+You: My name is Alex
+Gemini: Nice to meet you, Alex
+
+You: What is my name?
+Gemini: I do not know your name.
+```
+
+## Root Cause
+
+The application is only sending the latest prompt to Gemini.
+
+Problematic code:
+
+```javascript
+contents: prompt
+```
+
+This sends only the current user message, not the full conversation history.
+
+## Solution
+
+Store messages in `conversationHistory`.
+
+```javascript
+const conversationHistory = [];
+```
+
+Save the user message after validation.
+
+```javascript
+conversationHistory.push({
+  role: "user",
+  text: prompt,
+});
+```
+
+Transform the history into Gemini's expected format.
+
+```javascript
+const contents = conversationHistory.map((message) => ({
+  role: message.role,
+  parts: [
+    {
+      text: message.text,
+    },
+  ],
+}));
+```
+
+Send the full history to Gemini.
+
+```javascript
+const response = await ai.models.generateContent({
+  model: "gemini-2.5-flash",
+  contents,
+});
+```
+
+Save Gemini's response.
+
+```javascript
+conversationHistory.push({
+  role: "model",
+  text: response.text,
+});
+```
+
+---
+
+# Debug Logs Left in Final Code
+
+## Problem
+
+The application prints the full conversation history after every response.
+
+Example:
+
+```text
+Conversation history:
+[
+  { role: 'user', text: 'My name is Alex' },
+  { role: 'model', text: 'Nice to meet you, Alex!' }
+]
+```
+
+## Root Cause
+
+Debug logs were added to check if the conversation history was working.
+
+```javascript
+console.log("Conversation history:");
+console.log(conversationHistory);
+```
+
+## Solution
+
+Remove debug logs from the final version.
+
+Keep them only when debugging.
+
+```javascript
+// Remove this from final code
+console.log("Conversation history:");
+console.log(conversationHistory);
+```

@@ -2,7 +2,7 @@
 
 A learning project created to understand how to interact with Google's Gemini API using JavaScript and Node.js.
 
-This project is part of my AI Automation roadmap, where I build small applications to learn the fundamentals of AI, APIs, automation, CLI applications, and software engineering.
+This project is part of my AI Automation roadmap, where I build small applications to learn the fundamentals of AI, APIs, automation, CLI applications, memory, and software engineering.
 
 ---
 
@@ -19,6 +19,8 @@ The purpose of this project is to learn:
 - Terminal applications (CLI)
 - Input validation
 - Conversational loops
+- Conversation memory
+- Message history
 - Writing clean and maintainable code
 
 ---
@@ -35,6 +37,9 @@ Current features:
 - Handle API errors
 - Keep the application running in a conversation loop
 - Exit the application using `exit`, `quit`, or `q`
+- Store conversation history during the session
+- Send previous messages to Gemini as context
+- Allow Gemini to remember previous user messages during the same execution
 
 ---
 
@@ -61,8 +66,10 @@ gemini-playground/
 ├── notes/
 │   ├── day-01.md
 │   ├── day-02.md
+│   ├── day-03.md
 │   ├── session-summary-day-01.md
-│   └── session-summary-day-02.md
+│   ├── session-summary-day-02.md
+│   └── session-summary-day-03.md
 ├── src/
 │   └── index.js
 ├── .env
@@ -142,11 +149,23 @@ If input is exit / quit / q:
     close the program
 
 Otherwise:
-    send prompt to Gemini
+    save user message in conversation history
+
+↓
+
+Convert conversation history into Gemini format
+
+↓
+
+Send full conversation context to Gemini
 
 ↓
 
 Print Gemini response
+
+↓
+
+Save Gemini response in conversation history
 
 ↓
 
@@ -163,15 +182,19 @@ Repeat until user exits
 ========================
 Type your prompt or "exit" to quit.
 
-You: What is Docker?
+You: My name is Alex
+
+Generating response...
 
 Gemini:
-Docker is a platform that allows developers to package applications and their dependencies into containers.
+Nice to meet you, Alex! How can I help you today?
 
-You: Explain it with a football example.
+You: What is my name?
+
+Generating response...
 
 Gemini:
-Imagine each football team travels with everything it needs...
+Your name is Alex!
 
 You: exit
 
@@ -196,11 +219,19 @@ During this project I learned:
 - stdout
 - Input Validation
 - trim()
+- toLowerCase()
 - do...while
 - while loop
 - continue
 - Exit Commands
-- Stack Trace
+- Arrays
+- Objects
+- push()
+- map()
+- Conversation History
+- Conversation State
+- Gemini contents format
+- Role-based messages
 - Debugging
 - CLI UX
 - Code Review
@@ -209,15 +240,17 @@ During this project I learned:
 
 ## Future Improvements
 
-- Add real conversation history
-- Add memory between messages
-- Improve project architecture
-- Split logic into multiple files
+- Refactor logic into functions
+- Split the project into multiple files
+- Add persistent memory using files
+- Add system instructions
 - Add streaming responses
 - Add Markdown output
 - Add multiple AI model support
 - Add configuration options
 - Export conversations to a file
+- Limit conversation history size
+- Summarize old conversation history
 
 ---
 
