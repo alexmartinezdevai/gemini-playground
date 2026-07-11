@@ -9,10 +9,14 @@ import readline from "node:readline/promises";
 console.log("========================");
 console.log("   Gemini Playground");
 console.log("========================");
+console.log('Type your prompt or "exit" to quit.\n');
+
+let isRunning = true;
+const exitCommands = ["exit", "quit", "q"];
 
 const rl = readline.createInterface({
-    input: process.stdin,
-    output: process.stdout,
+  input: process.stdin,
+  output: process.stdout,
 });
 
 // Create a Gemini client authenticated with our API key
@@ -20,31 +24,41 @@ const ai = new GoogleGenAI({
   apiKey: process.env.GEMINI_API_KEY,
 });
 
-let prompt;
+while (isRunning) {
+  // 1. Ask user for prompt
+  const prompt = await rl.question("You: ");
 
+  // 2. Normalize prompt
+  const normalizedPrompt = prompt.trim().toLowerCase();
 
-do{
-    prompt = await rl.question("Enter your prompt: ");
-    if (!prompt.trim()) {
-        console.log("❌ Prompt cannot be empty. Please try again.");
-    }
-}while(!prompt.trim());
+  // 3. If empty, show error and continue
+  if (!normalizedPrompt) {
+    console.log("❌ Prompt cannot be empty. Please try again.\n");
+    continue;
+  }
+
+  // 4. If exit command, stop the loop
+  if (exitCommands.includes(normalizedPrompt)) {
+    console.log("\nGoodbye! 👋");
+    isRunning = false;
+    continue;
+  }
+
+  // 5. Otherwise call Gemini
+  console.log("\nGemini:");
+
+  try {
+    const response = await ai.models.generateContent({
+      model: "gemini-2.5-flash",
+      contents: prompt,
+    });
+
+    console.log(response.text);
+    console.log("");
+  } catch (error) {
+    console.error("Failed to generate response:");
+    console.error(error);
+  }
+}
 
 rl.close();
-
-
-
-console.log("\nGenerating response...\n");
-
-try {
-  const response = await ai.models.generateContent({
-    model: "gemini-2.5-flash",
-    contents: prompt
-  });
-
-  console.log(response.text);
-
-} catch (error) {
-  console.error("Failed to generate response:");
-  console.error(error);
-}
