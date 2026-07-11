@@ -2,7 +2,7 @@
 
 A learning project created to understand how to interact with Google's Gemini API using JavaScript and Node.js.
 
-This project is part of my AI Automation roadmap, where I build small applications to learn the fundamentals of AI, APIs, automation, CLI applications, memory, and software engineering.
+This project is part of my AI Automation roadmap, where I build small applications to learn the fundamentals of AI, APIs, automation, CLI applications, memory, refactoring, and software engineering.
 
 ---
 
@@ -21,6 +21,8 @@ The purpose of this project is to learn:
 - Conversational loops
 - Conversation memory
 - Message history
+- Refactoring
+- Functions
 - Writing clean and maintainable code
 
 ---
@@ -40,6 +42,8 @@ Current features:
 - Store conversation history during the session
 - Send previous messages to Gemini as context
 - Allow Gemini to remember previous user messages during the same execution
+- Use helper functions to separate responsibilities
+- Use a constant for the Gemini model name
 
 ---
 
@@ -67,9 +71,11 @@ gemini-playground/
 │   ├── day-01.md
 │   ├── day-02.md
 │   ├── day-03.md
+│   ├── day-04.md
 │   ├── session-summary-day-01.md
 │   ├── session-summary-day-02.md
-│   └── session-summary-day-03.md
+│   ├── session-summary-day-03.md
+│   └── session-summary-day-04.md
 ├── src/
 │   └── index.js
 ├── .env
@@ -130,7 +136,7 @@ Create readline interface
 
 ↓
 
-Show CLI instructions
+Print welcome message
 
 ↓
 
@@ -171,6 +177,30 @@ Save Gemini response in conversation history
 
 Repeat until user exits
 ```
+
+---
+
+## Current Helper Functions
+
+### `printWelcomeMessage()`
+
+Prints the CLI welcome banner and basic usage instructions.
+
+### `normalizeInput(input)`
+
+Trims spaces and converts user input to lowercase.
+
+### `isExitCommand(input)`
+
+Checks whether the user typed an exit command.
+
+### `formatHistoryForGemini(history)`
+
+Converts the internal conversation history format into Gemini's expected format.
+
+### `generateGeminiResponse(contents)`
+
+Calls the Gemini API and returns only the response text.
 
 ---
 
@@ -232,6 +262,10 @@ During this project I learned:
 - Conversation State
 - Gemini contents format
 - Role-based messages
+- Refactoring
+- Functions
+- Return values
+- Constants
 - Debugging
 - CLI UX
 - Code Review
@@ -240,8 +274,10 @@ During this project I learned:
 
 ## Future Improvements
 
-- Refactor logic into functions
 - Split the project into multiple files
+- Create a dedicated Gemini client module
+- Create a dedicated CLI module
+- Create a dedicated history module
 - Add persistent memory using files
 - Add system instructions
 - Add streaming responses

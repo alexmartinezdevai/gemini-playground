@@ -299,3 +299,115 @@ Keep them only when debugging.
 console.log("Conversation history:");
 console.log(conversationHistory);
 ```
+
+---
+
+# Function Does Not Return a Value
+
+## Problem
+
+A helper function runs, but the result is `undefined`.
+
+Example:
+
+```javascript
+function normalizeInput(input) {
+  input.trim().toLowerCase();
+}
+
+const normalizedPrompt = normalizeInput(prompt);
+```
+
+`normalizedPrompt` becomes `undefined`.
+
+## Root Cause
+
+The function does not use `return`.
+
+## Solution
+
+Return the transformed value.
+
+```javascript
+function normalizeInput(input) {
+  return input.trim().toLowerCase();
+}
+```
+
+---
+
+# async Function Without await
+
+## Problem
+
+The API call does not behave as expected, or the function returns a Promise instead of the final result.
+
+## Root Cause
+
+An asynchronous operation was not awaited.
+
+Problematic example:
+
+```javascript
+function generateGeminiResponse(contents) {
+  const response = ai.models.generateContent({
+    model: GEMINI_MODEL,
+    contents,
+  });
+
+  return response.text;
+}
+```
+
+## Solution
+
+Use `async` and `await`.
+
+```javascript
+async function generateGeminiResponse(contents) {
+  const response = await ai.models.generateContent({
+    model: GEMINI_MODEL,
+    contents,
+  });
+
+  return response.text;
+}
+```
+
+---
+
+# ReferenceError: Function Is Not Defined
+
+## Error
+
+```text
+ReferenceError: normalizeInput is not defined
+```
+
+## Root Cause
+
+The function name is misspelled, or the function does not exist in the current file.
+
+Example:
+
+```javascript
+const normalizedPrompt = normaliseInput(prompt);
+```
+
+But the function is named:
+
+```javascript
+function normalizeInput(input) {
+  return input.trim().toLowerCase();
+}
+```
+
+## Solution
+
+Check that the function name matches exactly.
+
+JavaScript is case-sensitive.
+
+```javascript
+const normalizedPrompt = normalizeInput(prompt);
+```
