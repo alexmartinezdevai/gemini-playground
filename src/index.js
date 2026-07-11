@@ -13,6 +13,7 @@ console.log('Type your prompt or "exit" to quit.\n');
 
 let isRunning = true;
 const exitCommands = ["exit", "quit", "q"];
+const conversationHistory = [];
 
 const rl = readline.createInterface({
   input: process.stdin,
@@ -44,17 +45,39 @@ while (isRunning) {
     continue;
   }
 
-  // 5. Otherwise call Gemini
-  console.log("\nGemini:");
+  // 5. Save the user message in conversation history
+  conversationHistory.push({
+    role: "user",
+    text: prompt,
+  });
+
+  // 6. Convert internal history format into Gemini's expected format
+  const contents = conversationHistory.map((message) => ({
+    role: message.role,
+    parts: [
+      {
+        text: message.text,
+      },
+    ],
+  }));
+
+  console.log("\nGenerating response...\n");
 
   try {
     const response = await ai.models.generateContent({
       model: "gemini-2.5-flash",
-      contents: prompt,
+      contents,
     });
 
+    console.log("Gemini:");
     console.log(response.text);
     console.log("");
+
+    // 7. Save Gemini's response in conversation history
+    conversationHistory.push({
+      role: "model",
+      text: response.text,
+    });
   } catch (error) {
     console.error("Failed to generate response:");
     console.error(error);
