@@ -1,13 +1,18 @@
 // Load environment variables from the .env file
 import "dotenv/config";
 
-// Import the official Google Gemini SDK
-import { GoogleGenAI } from "@google/genai";
-
 import readline from "node:readline/promises";
 
-const GEMINI_MODEL = "gemini-2.5-flash";
-const exitCommands = ["exit", "quit", "q"];
+import {
+  printWelcomeMessage,
+  normalizeInput,
+  isExitCommand,
+} from "./cli.js";
+
+import { formatHistoryForGemini } from "./history.js";
+
+import { generateGeminiResponse } from "./geminiClient.js";
+
 const conversationHistory = [];
 
 let isRunning = true;
@@ -16,46 +21,6 @@ const rl = readline.createInterface({
   input: process.stdin,
   output: process.stdout,
 });
-
-// Create a Gemini client authenticated with our API key
-const ai = new GoogleGenAI({
-  apiKey: process.env.GEMINI_API_KEY,
-});
-
-function printWelcomeMessage() {
-  console.log("========================");
-  console.log("   Gemini Playground");
-  console.log("========================");
-  console.log('Type your prompt or "exit" to quit.\n');
-}
-
-function normalizeInput(input) {
-  return input.trim().toLowerCase();
-}
-
-function isExitCommand(input) {
-  return exitCommands.includes(input);
-}
-
-function formatHistoryForGemini(history) {
-  return history.map((message) => ({
-    role: message.role,
-    parts: [
-      {
-        text: message.text,
-      },
-    ],
-  }));
-}
-
-async function generateGeminiResponse(contents) {
-  const response = await ai.models.generateContent({
-    model: GEMINI_MODEL,
-    contents,
-  });
-
-  return response.text;
-}
 
 printWelcomeMessage();
 
