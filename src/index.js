@@ -1,16 +1,12 @@
 // Load environment variables from the .env file
 import "dotenv/config";
-
 import readline from "node:readline/promises";
-
 import {
   printWelcomeMessage,
   normalizeInput,
   isExitCommand,
 } from "./cli.js";
-
 import { formatHistoryForGemini } from "./history.js";
-
 import { generateGeminiResponse } from "./geminiClient.js";
 
 const conversationHistory = [];

@@ -60,6 +60,57 @@ This error comes from the Google Gemini SDK, not from JavaScript itself.
 
 ---
 
+# Gemini API Quota Exceeded
+
+## Error
+
+```text
+ApiError: Quota exceeded.
+status: 429
+RESOURCE_EXHAUSTED
+```
+
+Example:
+
+```text
+You exceeded your current quota, please check your plan and billing details.
+Quota exceeded for metric: generativelanguage.googleapis.com/generate_content_free_tier_requests
+```
+
+## Symptoms
+
+The application starts correctly, but the Gemini API call fails.
+
+The error may include:
+
+```text
+status: 429
+RESOURCE_EXHAUSTED
+Please retry later
+```
+
+## Root Cause
+
+The Gemini API free-tier request limit was exceeded.
+
+This can happen when too many requests are made in a short period of time or when the daily free-tier limit is reached.
+
+## Solution
+
+- Wait and retry later.
+- Reduce the number of API calls while testing.
+- Test non-API flows by typing `exit`.
+- Check usage and rate limits in Google AI Studio.
+- Consider using another model or checking billing settings if needed.
+
+## Notes
+
+This is not a JavaScript error.
+
+If the stack trace reaches `generateGeminiResponse()`, it means the code reached the Gemini API correctly.
+
+---
+
 # Assignment to Constant Variable
 
 ## Error
@@ -410,4 +461,77 @@ JavaScript is case-sensitive.
 
 ```javascript
 const normalizedPrompt = normalizeInput(prompt);
+```
+
+---
+
+# Cannot Find Module
+
+## Error
+
+```text
+Error [ERR_MODULE_NOT_FOUND]: Cannot find module
+```
+
+## Root Cause
+
+Node.js cannot find the file being imported.
+
+Common causes:
+
+- Wrong file path.
+- Missing `.js` extension.
+- File name typo.
+- File does not exist in the expected folder.
+
+Problematic example:
+
+```javascript
+import { normalizeInput } from "./cli";
+```
+
+## Solution
+
+Use the correct relative path and include the `.js` extension.
+
+```javascript
+import { normalizeInput } from "./cli.js";
+```
+
+---
+
+# Named Export Not Found
+
+## Error
+
+```text
+SyntaxError: The requested module './cli.js' does not provide an export named 'normalizeInput'
+```
+
+## Root Cause
+
+The imported name does not match any exported name from the target file.
+
+Example:
+
+```javascript
+import { normaliseInput } from "./cli.js";
+```
+
+But the exported function is:
+
+```javascript
+export function normalizeInput(input) {
+  return input.trim().toLowerCase();
+}
+```
+
+## Solution
+
+Make sure the exported and imported names match exactly.
+
+Correct:
+
+```javascript
+import { normalizeInput } from "./cli.js";
 ```

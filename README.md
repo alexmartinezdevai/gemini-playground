@@ -2,7 +2,7 @@
 
 A learning project created to understand how to interact with Google's Gemini API using JavaScript and Node.js.
 
-This project is part of my AI Automation roadmap, where I build small applications to learn the fundamentals of AI, APIs, automation, CLI applications, memory, refactoring, and software engineering.
+This project is part of my AI Automation roadmap, where I build small applications to learn the fundamentals of AI, APIs, automation, CLI applications, memory, refactoring, modules, and software engineering.
 
 ---
 
@@ -23,6 +23,9 @@ The purpose of this project is to learn:
 - Message history
 - Refactoring
 - Functions
+- ES Modules
+- Import and export
+- Project architecture
 - Writing clean and maintainable code
 
 ---
@@ -44,6 +47,7 @@ Current features:
 - Allow Gemini to remember previous user messages during the same execution
 - Use helper functions to separate responsibilities
 - Use a constant for the Gemini model name
+- Split source code into multiple modules
 
 ---
 
@@ -51,6 +55,7 @@ Current features:
 
 - JavaScript
 - Node.js
+- ES Modules
 - Google GenAI SDK
 - dotenv
 - Node.js readline module
@@ -72,17 +77,95 @@ gemini-playground/
 │   ├── day-02.md
 │   ├── day-03.md
 │   ├── day-04.md
+│   ├── day-05.md
 │   ├── session-summary-day-01.md
 │   ├── session-summary-day-02.md
 │   ├── session-summary-day-03.md
-│   └── session-summary-day-04.md
+│   ├── session-summary-day-04.md
+│   └── session-summary-day-05.md
 ├── src/
-│   └── index.js
+│   ├── index.js
+│   ├── cli.js
+│   ├── history.js
+│   └── geminiClient.js
 ├── .env
 ├── .gitignore
 ├── package-lock.json
 ├── package.json
 └── README.md
+```
+
+---
+
+## Source Code Architecture
+
+### `src/index.js`
+
+Main application flow.
+
+Responsibilities:
+
+- Load environment variables
+- Create the readline interface
+- Run the main conversation loop
+- Validate user input
+- Save messages in conversation history
+- Call helper modules
+- Close the CLI when the user exits
+
+---
+
+### `src/cli.js`
+
+CLI-related helper functions.
+
+Responsibilities:
+
+- Print the welcome message
+- Normalize user input
+- Detect exit commands
+
+Exports:
+
+```javascript
+printWelcomeMessage
+normalizeInput
+isExitCommand
+```
+
+---
+
+### `src/history.js`
+
+Conversation history utilities.
+
+Responsibilities:
+
+- Convert internal conversation history into Gemini's expected format
+
+Exports:
+
+```javascript
+formatHistoryForGemini
+```
+
+---
+
+### `src/geminiClient.js`
+
+Gemini API logic.
+
+Responsibilities:
+
+- Create the Gemini client
+- Store the Gemini model name
+- Send formatted conversation contents to Gemini
+- Return Gemini's response text
+
+Exports:
+
+```javascript
+generateGeminiResponse
 ```
 
 ---
@@ -128,7 +211,7 @@ Load environment variables
 
 ↓
 
-Create Gemini client
+Import helper modules
 
 ↓
 
@@ -177,30 +260,6 @@ Save Gemini response in conversation history
 
 Repeat until user exits
 ```
-
----
-
-## Current Helper Functions
-
-### `printWelcomeMessage()`
-
-Prints the CLI welcome banner and basic usage instructions.
-
-### `normalizeInput(input)`
-
-Trims spaces and converts user input to lowercase.
-
-### `isExitCommand(input)`
-
-Checks whether the user typed an exit command.
-
-### `formatHistoryForGemini(history)`
-
-Converts the internal conversation history format into Gemini's expected format.
-
-### `generateGeminiResponse(contents)`
-
-Calls the Gemini API and returns only the response text.
 
 ---
 
@@ -266,6 +325,11 @@ During this project I learned:
 - Functions
 - Return values
 - Constants
+- ES Modules
+- export
+- import
+- Separation of Concerns
+- Project Architecture
 - Debugging
 - CLI UX
 - Code Review
@@ -274,10 +338,6 @@ During this project I learned:
 
 ## Future Improvements
 
-- Split the project into multiple files
-- Create a dedicated Gemini client module
-- Create a dedicated CLI module
-- Create a dedicated history module
 - Add persistent memory using files
 - Add system instructions
 - Add streaming responses
@@ -287,6 +347,8 @@ During this project I learned:
 - Export conversations to a file
 - Limit conversation history size
 - Summarize old conversation history
+- Improve error messages for API quota limits
+- Add retry logic for temporary API errors
 
 ---
 
