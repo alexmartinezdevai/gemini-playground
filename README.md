@@ -2,26 +2,28 @@
 
 A learning project created to understand how to interact with Google's Gemini API using JavaScript and Node.js.
 
-This project is part of my AI Automation roadmap, where I build small applications to learn the fundamentals of AI, APIs, automation, and software engineering.
+This project is part of my AI Automation roadmap, where I build small applications to learn the fundamentals of AI, APIs, automation, CLI applications, and software engineering.
 
 ---
 
-# Objectives
+## Objectives
 
 The purpose of this project is to learn:
 
 - Node.js fundamentals
 - JavaScript for backend development
 - Working with APIs
-- Prompt Engineering
+- Prompt Engineering basics
 - Environment variables
 - Error handling
 - Terminal applications (CLI)
+- Input validation
+- Conversational loops
 - Writing clean and maintainable code
 
 ---
 
-# Features
+## Features
 
 Current features:
 
@@ -29,47 +31,50 @@ Current features:
 - Send prompts to Gemini
 - Read prompts from the terminal
 - Validate user input
+- Reject empty prompts
 - Handle API errors
-- Interactive command-line interface (CLI)
+- Keep the application running in a conversation loop
+- Exit the application using `exit`, `quit`, or `q`
 
 ---
 
-# Technologies
+## Technologies
 
-- JavaScript (ES Modules)
+- JavaScript
 - Node.js
 - Google GenAI SDK
 - dotenv
+- Node.js readline module
 
 ---
 
-# Project Structure
+## Project Structure
 
-```
+```text
 gemini-playground/
 
+├── assets/
 ├── docs/
 │   └── troubleshooting.md
-│
+├── examples/
+│   └── first-prompt.md
 ├── notes/
-│   └── day-02.md
-│
-├── resources/
-│   └── glossary/
-│       └── glossary.md
-│
+│   ├── day-01.md
+│   ├── day-02.md
+│   ├── session-summary-day-01.md
+│   └── session-summary-day-02.md
 ├── src/
 │   └── index.js
-│
 ├── .env
 ├── .gitignore
+├── package-lock.json
 ├── package.json
 └── README.md
 ```
 
 ---
 
-# Installation
+## Installation
 
 Clone the repository.
 
@@ -97,11 +102,11 @@ node src/index.js
 
 ---
 
-# How It Works
+## How It Works
 
 Application flow:
 
-```
+```text
 Start
 
 ↓
@@ -118,46 +123,64 @@ Create readline interface
 
 ↓
 
+Show CLI instructions
+
+↓
+
 Ask the user for a prompt
 
 ↓
 
-Validate input
+Normalize and validate input
 
 ↓
 
-Generate AI response
+If input is empty:
+    show error and ask again
+
+If input is exit / quit / q:
+    close the program
+
+Otherwise:
+    send prompt to Gemini
 
 ↓
 
-Print response
+Print Gemini response
 
 ↓
 
-Close application
+Repeat until user exits
 ```
 
 ---
 
-# Example
+## Example
 
-```
+```text
 ========================
    Gemini Playground
 ========================
+Type your prompt or "exit" to quit.
 
-Enter your prompt:
+You: What is Docker?
 
-> Explain what Docker is.
+Gemini:
+Docker is a platform that allows developers to package applications and their dependencies into containers.
 
-Generating response...
+You: Explain it with a football example.
 
-Docker is a platform that allows developers to package...
+Gemini:
+Imagine each football team travels with everything it needs...
+
+You: exit
+
+Goodbye! 👋
 ```
 
 ---
 
-# Concepts Learned
+## Concepts Learned
 
 During this project I learned:
 
@@ -174,24 +197,31 @@ During this project I learned:
 - Input Validation
 - trim()
 - do...while
+- while loop
+- continue
+- Exit Commands
 - Stack Trace
 - Debugging
+- CLI UX
+- Code Review
 
 ---
 
-# Future Improvements
+## Future Improvements
 
-- Multi-turn conversations
-- Chat history
-- Streaming responses
-- Markdown output
-- Multiple AI models
-- Configuration menu
-- Better project architecture
+- Add real conversation history
+- Add memory between messages
+- Improve project architecture
+- Split logic into multiple files
+- Add streaming responses
+- Add Markdown output
+- Add multiple AI model support
+- Add configuration options
+- Export conversations to a file
 
 ---
 
-# Learning Goals
+## Learning Goals
 
 This repository is not only about building software.
 
@@ -205,19 +235,19 @@ Every study session includes:
 - Updated glossary
 - Code reviews
 
-The goal is to build strong software engineering foundations before moving into AI automation and intelligent agents.
+The goal is to build strong software engineering foundations before moving into AI automation, n8n, and intelligent agents.
 
 ---
 
-# Author
+## Author
 
 Alex Martinez
 
-GitHub:
+GitHub:  
 https://github.com/alexmartinezdevai
 
 ---
 
-# License
+## License
 
 This project is licensed under the MIT License.
