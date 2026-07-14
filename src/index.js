@@ -1,19 +1,29 @@
 // Load environment variables from the .env file
 import "dotenv/config";
+
 import readline from "node:readline/promises";
+
 import {
   printWelcomeMessage,
   normalizeInput,
   isExitCommand,
   printGeminiError,
+  isClearCommand,
 } from "./cli.js";
+
 import { formatHistoryForGemini } from "./history.js";
+
 import {
   generateGeminiResponse,
   isQuotaError,
 } from "./geminiClient.js";
 
-const conversationHistory = [];
+import {
+  loadConversationHistory,
+  saveConversationHistory,
+} from "./storage.js";
+
+const conversationHistory = await loadConversationHistory();
 
 let isRunning = true;
 
@@ -37,10 +47,17 @@ while (isRunning) {
     continue;
   }
 
-  // 4. If exit command, stop the loop
   if (isExitCommand(normalizedPrompt)) {
     console.log("\nGoodbye! 👋");
     isRunning = false;
+    continue;
+  }
+
+  if (isClearCommand(normalizedPrompt)) {
+  
+    conversationHistory.length = 0;
+    await saveConversationHistory(conversationHistory);
+    console.log("🧹 Conversation history cleared.\n");
     continue;
   }
 
@@ -49,6 +66,8 @@ while (isRunning) {
     role: "user",
     text: prompt,
   });
+
+  await saveConversationHistory(conversationHistory);
 
   // 6. Convert internal history format into Gemini's expected format
   const contents = formatHistoryForGemini(conversationHistory);
@@ -67,6 +86,9 @@ while (isRunning) {
       role: "model",
       text: geminiResponse,
     });
+
+    await saveConversationHistory(conversationHistory);
+
   } catch (error) {
     printGeminiError(error, isQuotaError);
   }
