@@ -608,3 +608,721 @@ export function printGeminiError(error, isQuotaError) {
 ## Notes
 
 Raw stack traces are useful during development, but they are usually not appropriate for normal CLI output.
+
+---
+
+# Persistent Memory Not Loading
+
+## Problem
+
+The application does not remember previous conversations after restarting.
+
+Example:
+
+```text
+You: My name is Alex
+Gemini: Nice to meet you, Alex
+
+Application is closed and opened again.
+
+You: What is my name?
+Gemini: I do not know your name.
+```
+
+## Root Cause
+
+The conversation history is not being loaded from the JSON file when the application starts.
+
+Possible causes:
+
+- `data/conversation-history.json` does not exist.
+- The file path in `config.js` is incorrect.
+- `loadConversationHistory()` is not imported in `index.js`.
+- `index.js` still uses an empty array instead of loading from storage.
+
+Problematic code:
+
+```javascript
+const conversationHistory = [];
+```
+
+## Solution
+
+Make sure this file exists:
+
+```text
+data/conversation-history.json
+```
+
+Initial content:
+
+```json
+[]
+```
+
+Make sure `config.js` includes:
+
+```javascript
+export const CONVERSATION_HISTORY_FILE = "data/conversation-history.json";
+```
+
+Make sure `index.js` imports the storage functions:
+
+```javascript
+import {
+  loadConversationHistory,
+  saveConversationHistory,
+} from "./storage.js";
+```
+
+And make sure the conversation history is loaded like this:
+
+```javascript
+const conversationHistory = await loadConversationHistory();
+```
+
+## Notes
+
+The app needs persistent storage if it should remember information after being closed.
+
+Session-based memory only works while the application is running.
+
+---
+
+# Persistent Memory Not Saving
+
+## Problem
+
+The app remembers messages during the current session, but the JSON file does not update.
+
+## Root Cause
+
+The application updates the `conversationHistory` array but does not write it to disk.
+
+Example:
+
+```javascript
+conversationHistory.push({
+  role: "user",
+  text: prompt,
+});
+```
+
+This only updates memory inside the running program.
+
+It does not save the data to a file.
+
+## Solution
+
+Call `saveConversationHistory()` after adding a new message.
+
+For user messages:
+
+```javascript
+conversationHistory.push({
+  role: "user",
+  text: prompt,
+});
+
+await saveConversationHistory(conversationHistory);
+```
+
+For Gemini responses:
+
+```javascript
+conversationHistory.push({
+  role: "model",
+  text: geminiResponse,
+});
+
+await saveConversationHistory(conversationHistory);
+```
+
+## Notes
+
+Updating an array and saving a file are two different operations.
+
+The app must do both if memory should persist.
+
+---
+
+# conversation-history.json Does Not Exist
+
+## Problem
+
+The app cannot load persistent memory.
+
+## Root Cause
+
+The memory file was not created.
+
+The app expects this file:
+
+```text
+data/conversation-history.json
+```
+
+## Solution
+
+Create the folder:
+
+```text
+data/
+```
+
+Create the file:
+
+```text
+conversation-history.json
+```
+
+Add this initial content:
+
+```json
+[]
+```
+
+Final structure:
+
+```text
+data/
+└── conversation-history.json
+```
+
+## Notes
+
+The file starts as an empty JSON array because conversation history is stored as a list of messages.
+
+---
+
+# Invalid JSON in conversation-history.json
+
+## Problem
+
+The app starts with empty memory or fails to load existing memory.
+
+## Root Cause
+
+The JSON file contains invalid JSON syntax.
+
+Invalid example:
+
+```json
+[
+  {
+    "role": "user",
+    "text": "Hello",
+  }
+]
+```
+
+The trailing comma after `"Hello"` is invalid JSON.
+
+## Solution
+
+Fix the JSON manually or reset the file to:
+
+```json
+[]
+```
+
+Valid example:
+
+```json
+[
+  {
+    "role": "user",
+    "text": "Hello"
+  }
+]
+```
+
+## Notes
+
+JavaScript objects can sometimes allow trailing commas, but JSON files cannot.
+
+---
+
+# Clear Command Does Not Work
+
+## Problem
+
+Typing `clear` or `reset` does not clear the conversation memory.
+
+## Root Cause
+
+One of the clear command pieces is missing.
+
+Possible causes:
+
+- `CLEAR_COMMANDS` is missing from `config.js`.
+- `isClearCommand()` is missing from `cli.js`.
+- `isClearCommand()` is not imported in `index.js`.
+- The history array is cleared but not saved to disk.
+
+## Solution
+
+In `config.js`:
+
+```javascript
+export const CLEAR_COMMANDS = ["clear", "reset"];
+```
+
+In `cli.js`:
+
+```javascript
+export function isClearCommand(input) {
+  return CLEAR_COMMANDS.includes(input);
+}
+```
+
+In `index.js`, import it:
+
+```javascript
+import {
+  printWelcomeMessage,
+  normalizeInput,
+  isExitCommand,
+  printGeminiError,
+  isClearCommand,
+} from "./cli.js";
+```
+
+Then handle the command before sending anything to Gemini:
+
+```javascript
+if (isClearCommand(normalizedPrompt)) {
+  conversationHistory.length = 0;
+  await saveConversationHistory(conversationHistory);
+  console.log("🧹 Conversation history cleared.\n");
+  continue;
+}
+```
+
+## Notes
+
+The array is cleared with:
+
+```javascript
+conversationHistory.length = 0;
+```
+
+This keeps the same array reference but removes all items.
+
+This is useful when the array was declared with `const`.
+
+---
+
+# Clear Command Clears Memory During Session But Not After Restart
+
+## Problem
+
+Typing `clear` removes memory during the current session, but after restarting the app, old memory comes back.
+
+## Root Cause
+
+The array was cleared in memory, but the JSON file was not updated.
+
+Problematic code:
+
+```javascript
+conversationHistory.length = 0;
+console.log("Memory cleared.");
+```
+
+## Solution
+
+Save the empty array after clearing it.
+
+```javascript
+conversationHistory.length = 0;
+await saveConversationHistory(conversationHistory);
+console.log("🧹 Conversation history cleared.\n");
+```
+
+## Notes
+
+Persistent memory must always update the file.
+
+Otherwise, old memory remains stored on disk.
+
+---
+
+# Retry Logic Does Not Wait
+
+## Problem
+
+The app retries immediately instead of waiting between attempts.
+
+## Root Cause
+
+`sleep()` was not awaited.
+
+Problematic code:
+
+```javascript
+sleep(RETRY_DELAY_MS);
+```
+
+This starts the Promise but does not wait for it.
+
+## Solution
+
+Use `await`:
+
+```javascript
+await sleep(RETRY_DELAY_MS);
+```
+
+The `generateGeminiResponse()` function must be async:
+
+```javascript
+export async function generateGeminiResponse(contents) {
+  // ...
+}
+```
+
+---
+
+# Retry Logic Never Stops
+
+## Problem
+
+The app keeps retrying forever.
+
+## Root Cause
+
+There is no maximum retry limit or the retry counter is not increasing.
+
+Problematic logic:
+
+```javascript
+while (true) {
+  // retry forever
+}
+```
+
+## Solution
+
+Use `MAX_RETRIES` and increase the attempt counter.
+
+```javascript
+let attempt = 0;
+
+while (attempt <= MAX_RETRIES) {
+  try {
+    const response = await ai.models.generateContent({
+      model: GEMINI_MODEL,
+      contents,
+    });
+
+    return response.text;
+  } catch (error) {
+    if (!isQuotaError(error) || attempt === MAX_RETRIES) {
+      throw error;
+    }
+
+    attempt++;
+
+    await sleep(RETRY_DELAY_MS);
+  }
+}
+```
+
+## Notes
+
+With:
+
+```javascript
+export const MAX_RETRIES = 2;
+```
+
+The app makes:
+
+```text
+1 normal attempt
++
+2 retries
+=
+3 total attempts
+```
+
+---
+
+# Retry Logic Retries Non-Temporary Errors
+
+## Problem
+
+The app retries errors that should not be retried.
+
+Example:
+
+```text
+API key invalid
+Wrong request format
+Missing parameter
+```
+
+## Root Cause
+
+The retry logic does not check the error type.
+
+## Solution
+
+Only retry temporary or quota-related errors.
+
+```javascript
+if (!isQuotaError(error) || attempt === MAX_RETRIES) {
+  throw error;
+}
+```
+
+This means:
+
+```text
+If it is not a quota error:
+    throw the error
+
+If retry attempts are finished:
+    throw the error
+
+Otherwise:
+    retry
+```
+
+---
+
+# System Instruction Not Affecting Gemini
+
+## Problem
+
+Gemini does not follow the expected behavior from the system instruction.
+
+## Root Cause
+
+The `SYSTEM_INSTRUCTION` value exists in `config.js`, but it is not sent to Gemini.
+
+## Solution
+
+Import it in `geminiClient.js`:
+
+```javascript
+import {
+  GEMINI_MODEL,
+  MAX_RETRIES,
+  RETRY_DELAY_MS,
+  SYSTEM_INSTRUCTION,
+} from "./config.js";
+```
+
+Then send it in the API call:
+
+```javascript
+const response = await ai.models.generateContent({
+  model: GEMINI_MODEL,
+  contents,
+  config: {
+    systemInstruction: SYSTEM_INSTRUCTION,
+  },
+});
+```
+
+## Notes
+
+A system instruction controls the model's default behavior.
+
+It does not replace user prompts, but it influences how Gemini responds.
+
+---
+
+# Config Value Not Updating App Behavior
+
+## Problem
+
+Changing a value in `config.js` does not seem to affect the app.
+
+Example:
+
+```javascript
+export const DEBUG_MODE = true;
+```
+
+But no debug details appear.
+
+## Root Cause
+
+Possible causes:
+
+- The value is not imported where it is needed.
+- The app was not restarted after changing the file.
+- The feature only runs under certain conditions, such as errors.
+- The old value is still hardcoded somewhere else.
+
+## Solution
+
+Check that the value is imported from `config.js`.
+
+Example:
+
+```javascript
+import { DEBUG_MODE } from "./config.js";
+```
+
+Restart the app:
+
+```bash
+node src/index.js
+```
+
+Search for hardcoded duplicated values.
+
+Example to avoid:
+
+```javascript
+const DEBUG_MODE = false;
+```
+
+inside another file.
+
+## Notes
+
+A config file is useful only if other modules actually import and use its values.
+
+---
+
+# Debug Mode Shows No Error Details
+
+## Problem
+
+`DEBUG_MODE` is set to `true`, but no technical error details appear.
+
+## Root Cause
+
+Debug details only appear when an error happens.
+
+If Gemini responds successfully, there is no error to print.
+
+## Solution
+
+Make sure `printGeminiError()` includes this logic:
+
+```javascript
+if (DEBUG_MODE) {
+  console.error("Debug error details:");
+  console.error(error);
+}
+```
+
+And make sure `DEBUG_MODE` is imported in `cli.js`:
+
+```javascript
+import { EXIT_COMMANDS, CLEAR_COMMANDS, DEBUG_MODE } from "./config.js";
+```
+
+## Notes
+
+Debug mode should not change normal successful responses.
+
+It only affects error output.
+
+---
+
+# fs/promises Import Error
+
+## Problem
+
+The app fails when importing the file system module.
+
+## Root Cause
+
+The import path is wrong.
+
+Problematic code:
+
+```javascript
+import fs from "fs/promises";
+```
+
+## Solution
+
+Use the Node.js native module prefix:
+
+```javascript
+import fs from "node:fs/promises";
+```
+
+## Notes
+
+`node:` makes it clear that the module is built into Node.js.
+
+---
+
+# JSON.stringify Output Is Not Readable
+
+## Problem
+
+The conversation history file is saved as one long line.
+
+Example:
+
+```json
+[{"role":"user","text":"Hello"},{"role":"model","text":"Hi"}]
+```
+
+## Root Cause
+
+`JSON.stringify()` was used without formatting arguments.
+
+Problematic code:
+
+```javascript
+JSON.stringify(history);
+```
+
+## Solution
+
+Use:
+
+```javascript
+JSON.stringify(history, null, 2);
+```
+
+Example:
+
+```javascript
+const jsonContent = JSON.stringify(history, null, 2);
+```
+
+This creates readable formatted JSON.
+
+---
+
+# Top-Level await Does Not Work
+
+## Problem
+
+This line causes an error:
+
+```javascript
+const conversationHistory = await loadConversationHistory();
+```
+
+## Root Cause
+
+Top-level `await` requires ES Modules.
+
+If the project is not configured as an ES Module project, Node.js may not allow it.
+
+## Solution
+
+Make sure `package.json` includes:
+
+```json
+{
+  "type": "module"
+}
+```
+
+## Notes
+
+The project already uses ES Modules with `import` and `export`, so `"type": "module"` is required.

@@ -2,7 +2,7 @@
 
 A learning project created to understand how to interact with Google's Gemini API using JavaScript and Node.js.
 
-This project is part of my AI Automation roadmap, where I build small applications to learn the fundamentals of AI, APIs, automation, CLI applications, memory, refactoring, modules, error handling, and software engineering.
+This project is part of my AI Automation roadmap, where I build small applications to learn the fundamentals of AI, APIs, automation, CLI applications, memory, refactoring, modules, error handling, persistent storage, and software engineering.
 
 ---
 
@@ -21,7 +21,7 @@ The purpose of this project is to learn:
 - Input validation
 - Conversational loops
 - Conversation memory
-- Message history
+- Persistent memory
 - Refactoring
 - Functions
 - ES Modules
@@ -41,17 +41,20 @@ Current features:
 - Validate user input
 - Reject empty prompts
 - Handle API errors
+- Retry temporary Gemini quota errors
 - Keep the application running in a conversation loop
 - Exit the application using `exit`, `quit`, or `q`
 - Store conversation history during the session
+- Save conversation history to a JSON file
+- Load conversation history when the app starts
+- Clear memory using `clear` or `reset`
 - Send previous messages to Gemini as context
-- Allow Gemini to remember previous user messages during the same execution
+- Use system instructions to control Gemini's behavior
 - Use helper functions to separate responsibilities
-- Use a constant for the Gemini model name
+- Use a central configuration file
 - Split source code into multiple modules
-- Detect Gemini quota errors
-- Show clean user-facing error messages
 - Hide large stack traces from normal CLI output
+- Support debug mode for technical error details
 
 ---
 
@@ -63,6 +66,8 @@ Current features:
 - Google GenAI SDK
 - dotenv
 - Node.js readline module
+- Node.js fs/promises module
+- JSON file storage
 
 ---
 
@@ -71,7 +76,8 @@ Current features:
 ```text
 gemini-playground/
 
-├── assets/
+├── data/
+│   └── conversation-history.json
 ├── docs/
 │   └── troubleshooting.md
 ├── examples/
@@ -83,17 +89,22 @@ gemini-playground/
 │   ├── day-04.md
 │   ├── day-05.md
 │   ├── day-06.md
+│   ├── day-07.md
 │   ├── session-summary-day-01.md
 │   ├── session-summary-day-02.md
 │   ├── session-summary-day-03.md
 │   ├── session-summary-day-04.md
 │   ├── session-summary-day-05.md
-│   └── session-summary-day-06.md
+│   ├── session-summary-day-06.md
+│   └── session-summary-day-07.md
 ├── src/
 │   ├── index.js
 │   ├── cli.js
+│   ├── config.js
+│   ├── geminiClient.js
 │   ├── history.js
-│   └── geminiClient.js
+│   ├── storage.js
+│   └── utils.js
 ├── .env
 ├── .gitignore
 ├── package-lock.json
@@ -115,9 +126,10 @@ Responsibilities:
 - Create the readline interface
 - Run the main conversation loop
 - Validate user input
+- Load conversation history
 - Save messages in conversation history
+- Handle clear/reset commands
 - Call helper modules
-- Handle application flow errors
 - Close the CLI when the user exits
 
 ---
@@ -131,6 +143,7 @@ Responsibilities:
 - Print the welcome message
 - Normalize user input
 - Detect exit commands
+- Detect clear/reset commands
 - Print clean Gemini error messages
 
 Exports:
@@ -139,7 +152,36 @@ Exports:
 printWelcomeMessage
 normalizeInput
 isExitCommand
+isClearCommand
 printGeminiError
+```
+
+---
+
+### `src/config.js`
+
+Central configuration file.
+
+Responsibilities:
+
+- Store the Gemini model name
+- Store debug mode configuration
+- Store retry configuration
+- Store CLI commands
+- Store system instruction
+- Store conversation history file path
+
+Exports:
+
+```javascript
+GEMINI_MODEL
+DEBUG_MODE
+MAX_RETRIES
+RETRY_DELAY_MS
+EXIT_COMMANDS
+CLEAR_COMMANDS
+SYSTEM_INSTRUCTION
+CONVERSATION_HISTORY_FILE
 ```
 
 ---
@@ -167,16 +209,47 @@ Gemini API logic.
 Responsibilities:
 
 - Create the Gemini client
-- Store the Gemini model name
 - Send formatted conversation contents to Gemini
+- Use system instructions
+- Retry quota errors
 - Return Gemini's response text
-- Detect quota errors from Gemini
+- Detect quota errors
 
 Exports:
 
 ```javascript
 generateGeminiResponse
 isQuotaError
+```
+
+---
+
+### `src/storage.js`
+
+Persistent storage logic.
+
+Responsibilities:
+
+- Load conversation history from a JSON file
+- Save conversation history to a JSON file
+
+Exports:
+
+```javascript
+loadConversationHistory
+saveConversationHistory
+```
+
+---
+
+### `src/utils.js`
+
+Generic utility functions.
+
+Exports:
+
+```javascript
+sleep
 ```
 
 ---
@@ -222,7 +295,7 @@ Load environment variables
 
 ↓
 
-Import helper modules
+Load conversation history from JSON file
 
 ↓
 
@@ -248,8 +321,15 @@ If input is empty:
 If input is exit / quit / q:
     close the program
 
+If input is clear / reset:
+    clear memory and save empty history
+
 Otherwise:
     save user message in conversation history
+
+↓
+
+Save conversation history to JSON file
 
 ↓
 
@@ -264,35 +344,18 @@ Send full conversation context to Gemini
 If Gemini succeeds:
     print Gemini response
     save Gemini response in conversation history
+    update JSON file
 
-If Gemini fails:
-    detect the error type
-    print a clean user-facing error message
+If Gemini fails temporarily:
+    retry request
+
+If Gemini fails finally:
+    print clean user-facing error message
 
 ↓
 
 Repeat until user exits
 ```
-
----
-
-## Error Handling
-
-The application now handles Gemini errors more cleanly.
-
-For quota errors:
-
-```text
-⚠️ Gemini quota limit reached. Please wait and try again later.
-```
-
-For unknown errors:
-
-```text
-❌ Failed to generate response. Please try again.
-```
-
-This prevents large stack traces from being shown during normal CLI usage.
 
 ---
 
@@ -311,17 +374,39 @@ Generating response...
 Gemini:
 Nice to meet you, Alex! How can I help you today?
 
-You: What is my name?
-
-Generating response...
-
-Gemini:
-Your name is Alex!
-
 You: exit
 
 Goodbye! 👋
 ```
+
+Open the app again:
+
+```text
+You: What is my name?
+
+Gemini:
+Your name is Alex.
+```
+
+Clear memory:
+
+```text
+You: clear
+
+🧹 Conversation history cleared.
+```
+
+---
+
+## Current Commands
+
+| Command | Purpose |
+|---|---|
+| `exit` | Close the application |
+| `quit` | Close the application |
+| `q` | Close the application |
+| `clear` | Clear conversation memory |
+| `reset` | Clear conversation memory |
 
 ---
 
@@ -337,74 +422,36 @@ During this project I learned:
 - async / await
 - try...catch
 - API error handling
+- Retry logic
 - HTTP status codes
 - Quota errors
-- readline
-- stdin
-- stdout
-- Input Validation
-- trim()
-- toLowerCase()
-- do...while
-- while loop
-- continue
-- Exit Commands
-- Arrays
-- Objects
-- push()
-- map()
-- Conversation History
-- Conversation State
-- Gemini contents format
-- Role-based messages
-- Refactoring
-- Functions
-- Return values
-- Constants
+- Persistent memory
+- JSON file storage
+- Node.js `fs/promises`
+- System instructions
+- Debug mode
+- Configuration files
+- CLI commands
 - ES Modules
 - export
 - import
 - Separation of Concerns
 - Project Architecture
-- User-facing error messages
-- Debugging
-- CLI UX
-- Code Review
 
 ---
 
 ## Future Improvements
 
-- Add persistent memory using files
-- Add system instructions
-- Add streaming responses
-- Add Markdown output
-- Add multiple AI model support
-- Add configuration options
-- Export conversations to a file
+- Add a debug command
+- Add a memory status command
+- Add conversation export
 - Limit conversation history size
 - Summarize old conversation history
-- Add retry logic for temporary API errors
-- Add debug mode for developers
-- Add a `config.js` module
-
----
-
-## Learning Goals
-
-This repository is not only about building software.
-
-It is also about documenting the learning process.
-
-Every study session includes:
-
-- Technical notes
-- Troubleshooting documentation
-- Session summaries
-- Updated glossary
-- Code reviews
-
-The goal is to build strong software engineering foundations before moving into AI automation, n8n, and intelligent agents.
+- Add better retry messages
+- Move retry messages into `cli.js`
+- Add multiple AI model support
+- Add a configuration menu
+- Add tests
 
 ---
 
