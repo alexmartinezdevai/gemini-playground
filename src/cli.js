@@ -14,3 +14,12 @@ export function normalizeInput(input) {
 export function isExitCommand(input) {
   return exitCommands.includes(input);
 }
+
+export function printGeminiError(error, isQuotaError) {
+  if (isQuotaError(error)) {
+    console.error("⚠️ Gemini quota limit reached. Please wait and try again later.\n");
+    return;
+  }
+
+  console.error("❌ Failed to generate response. Please try again.\n");
+}

@@ -16,3 +16,7 @@ export async function generateGeminiResponse(contents) {
 
   return response.text;
 }
+
+export function isQuotaError(error) {
+  return error.status === 429;
+}

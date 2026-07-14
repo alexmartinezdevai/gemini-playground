@@ -5,9 +5,13 @@ import {
   printWelcomeMessage,
   normalizeInput,
   isExitCommand,
+  printGeminiError,
 } from "./cli.js";
 import { formatHistoryForGemini } from "./history.js";
-import { generateGeminiResponse } from "./geminiClient.js";
+import {
+  generateGeminiResponse,
+  isQuotaError,
+} from "./geminiClient.js";
 
 const conversationHistory = [];
 
@@ -64,8 +68,7 @@ while (isRunning) {
       text: geminiResponse,
     });
   } catch (error) {
-    console.error("Failed to generate response:");
-    console.error(error);
+    printGeminiError(error, isQuotaError);
   }
 }
 
