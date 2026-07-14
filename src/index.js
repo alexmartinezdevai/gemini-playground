@@ -9,9 +9,17 @@ import {
   isExitCommand,
   printGeminiError,
   isClearCommand,
+  isHelpCommand,
+  printHelpMessage,
+  isMemoryStatusCommand,
+  printMemoryStatus,
 } from "./cli.js";
 
-import { formatHistoryForGemini } from "./history.js";
+import {
+  formatHistoryForGemini,
+  getRecentConversationHistory,
+} from "./history.js";
+
 
 import {
   generateGeminiResponse,
@@ -47,6 +55,16 @@ while (isRunning) {
     continue;
   }
 
+  if (isHelpCommand(normalizedPrompt)) {
+    printHelpMessage();
+    continue;
+  }
+
+  if (isMemoryStatusCommand(normalizedPrompt)) {
+    printMemoryStatus(conversationHistory);
+    continue;
+  }
+
   if (isExitCommand(normalizedPrompt)) {
     console.log("\nGoodbye! 👋");
     isRunning = false;
@@ -54,7 +72,17 @@ while (isRunning) {
   }
 
   if (isClearCommand(normalizedPrompt)) {
-  
+    const confirmation = await rl.question(
+      'Are you sure you want to clear conversation memory? Type "yes" to confirm: '
+    );
+
+    const normalizedConfirmation = normalizeInput(confirmation);
+
+    if (normalizedConfirmation !== "yes") {
+      console.log("Clear memory cancelled.\n");
+      continue;
+    }
+
     conversationHistory.length = 0;
     await saveConversationHistory(conversationHistory);
     console.log("🧹 Conversation history cleared.\n");
@@ -69,8 +97,11 @@ while (isRunning) {
 
   await saveConversationHistory(conversationHistory);
 
-  // 6. Convert internal history format into Gemini's expected format
-  const contents = formatHistoryForGemini(conversationHistory);
+  // 6. Keep only recent messages before sending context to Gemini
+  const recentHistory = getRecentConversationHistory(conversationHistory);
+
+  // 7. Convert recent history into Gemini's expected format
+  const contents = formatHistoryForGemini(recentHistory);
 
   console.log("\nGenerating response...\n");
 
@@ -81,7 +112,7 @@ while (isRunning) {
     console.log(geminiResponse);
     console.log("");
 
-    // 7. Save Gemini's response in conversation history
+    // 8. Save Gemini's response in conversation history
     conversationHistory.push({
       role: "model",
       text: geminiResponse,

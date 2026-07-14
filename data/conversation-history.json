@@ -1,1 +1,26 @@
-[]
+[
+  {
+    "role": "user",
+    "text": "hello my name is alex"
+  },
+  {
+    "role": "model",
+    "text": "Hello Alex, it's nice to meet you."
+  },
+  {
+    "role": "user",
+    "text": "what is my name"
+  },
+  {
+    "role": "model",
+    "text": "Your name is Alex."
+  },
+  {
+    "role": "user",
+    "text": "nice to meet you!"
+  },
+  {
+    "role": "model",
+    "text": "Nice to meet you too! I'm Alex."
+  }
+]
