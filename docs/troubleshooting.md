@@ -1326,3 +1326,385 @@ Make sure `package.json` includes:
 ## Notes
 
 The project already uses ES Modules with `import` and `export`, so `"type": "module"` is required.
+
+
+---
+
+# Help Command Does Not Work
+
+## Problem
+
+Typing `help` or `commands` is sent to Gemini instead of showing the command list.
+
+## Root Cause
+
+The app does not detect help commands before sending the prompt to Gemini.
+
+Possible causes:
+
+- `HELP_COMMANDS` is missing from `config.js`.
+- `isHelpCommand()` is missing from `cli.js`.
+- `isHelpCommand()` is not imported in `index.js`.
+- The help command check is placed after the Gemini API call.
+
+## Solution
+
+In `config.js`:
+
+```javascript
+export const HELP_COMMANDS = ["help", "commands"];
+```
+
+In `cli.js`:
+
+```javascript
+export function isHelpCommand(input) {
+  return HELP_COMMANDS.includes(input);
+}
+```
+
+In `index.js`, check the command before sending the prompt to Gemini:
+
+```javascript
+if (isHelpCommand(normalizedPrompt)) {
+  printHelpMessage();
+  continue;
+}
+```
+
+## Notes
+
+CLI commands should be handled before the app sends anything to the AI model.
+
+---
+
+# Memory Status Command Does Not Work
+
+## Problem
+
+Typing `memory` or `status` is sent to Gemini instead of showing memory information.
+
+## Root Cause
+
+The app does not detect memory status commands before the Gemini API call.
+
+Possible causes:
+
+- `MEMORY_STATUS_COMMANDS` is missing from `config.js`.
+- `isMemoryStatusCommand()` is missing from `cli.js`.
+- `printMemoryStatus()` is missing from `cli.js`.
+- The command check is missing from `index.js`.
+
+## Solution
+
+In `config.js`:
+
+```javascript
+export const MEMORY_STATUS_COMMANDS = ["memory", "status"];
+```
+
+In `cli.js`:
+
+```javascript
+export function isMemoryStatusCommand(input) {
+  return MEMORY_STATUS_COMMANDS.includes(input);
+}
+```
+
+In `index.js`:
+
+```javascript
+if (isMemoryStatusCommand(normalizedPrompt)) {
+  printMemoryStatus(conversationHistory);
+  continue;
+}
+```
+
+## Notes
+
+The command should use the full stored `conversationHistory`, not the limited Gemini context.
+
+---
+
+# Clear Command Deletes Memory Without Confirmation
+
+## Problem
+
+Typing `clear` or `reset` immediately deletes the conversation memory.
+
+## Root Cause
+
+The clear command directly empties the array and saves it without asking the user to confirm.
+
+Problematic flow:
+
+```text
+User types clear
+Memory is deleted immediately
+```
+
+## Solution
+
+Ask for confirmation before clearing memory.
+
+Expected flow:
+
+```text
+User types clear
+App asks for confirmation
+User types yes
+Memory is deleted
+```
+
+If the user does not type `yes`, cancel the operation.
+
+## Notes
+
+Clear/reset is a destructive action, so confirmation improves safety.
+
+---
+
+# Clear Confirmation Does Not Cancel
+
+## Problem
+
+Typing something other than `yes` still clears the memory.
+
+## Root Cause
+
+The confirmation input is not checked correctly.
+
+## Solution
+
+Normalize the confirmation input and compare it with `"yes"`.
+
+```javascript
+const normalizedConfirmation = normalizeInput(confirmation);
+
+if (normalizedConfirmation !== "yes") {
+  console.log("Clear memory cancelled.\n");
+  continue;
+}
+```
+
+Only clear memory after this check passes.
+
+---
+
+# data Folder Missing When Saving Memory
+
+## Problem
+
+The app fails when trying to save conversation history.
+
+The error may look like:
+
+```text
+ENOENT: no such file or directory
+```
+
+## Root Cause
+
+The file path points to:
+
+```text
+data/conversation-history.json
+```
+
+but the `data/` folder does not exist.
+
+## Solution
+
+Before writing the file, create the folder if needed.
+
+```javascript
+await fs.mkdir("data", { recursive: true });
+```
+
+Then save the JSON file.
+
+## Notes
+
+`recursive: true` means:
+
+```text
+If the folder exists → do nothing
+If the folder does not exist → create it
+```
+
+---
+
+# Invalid JSON Error Is Hidden
+
+## Problem
+
+The app silently starts with empty memory even though `conversation-history.json` exists.
+
+## Root Cause
+
+The catch block returns `[]` for every error.
+
+Problematic logic:
+
+```javascript
+catch (error) {
+  return [];
+}
+```
+
+This hides real issues such as invalid JSON.
+
+## Solution
+
+Only return `[]` when the file does not exist.
+
+```javascript
+if (error.code === "ENOENT") {
+  return [];
+}
+
+throw error;
+```
+
+Optionally show a clearer message for invalid JSON:
+
+```javascript
+if (error.name === "SyntaxError") {
+  console.error(
+    `Error: The conversation history file "${CONVERSATION_HISTORY_FILE}" contains invalid JSON.`
+  );
+}
+```
+
+## Notes
+
+A missing file is normal on first run.
+
+Invalid JSON is not normal and should not be hidden.
+
+---
+
+# Context Limit Does Not Seem To Work
+
+## Problem
+
+The app still stores many messages in `conversation-history.json`.
+
+## Root Cause
+
+The context limit only controls what is sent to Gemini.
+
+It does not delete old messages from the persistent memory file.
+
+## Solution
+
+Understand the difference:
+
+```text
+conversation-history.json
+→ stores full memory
+
+Gemini API request
+→ receives only recent context messages
+```
+
+The limiting function should be applied before formatting history for Gemini:
+
+```javascript
+const recentHistory = getRecentConversationHistory(conversationHistory);
+const contents = formatHistoryForGemini(recentHistory);
+```
+
+## Notes
+
+This is intentional.
+
+The app keeps full memory but sends limited context.
+
+---
+
+# Context Messages Count Looks Wrong
+
+## Problem
+
+The memory status says:
+
+```text
+Context messages sent to Gemini: 20
+```
+
+or another number that does not match user/model message pairs.
+
+## Root Cause
+
+`MAX_CONTEXT_MESSAGES` counts total messages, not conversation turns.
+
+A message can be:
+
+```text
+user
+model
+```
+
+So `MAX_CONTEXT_MESSAGES = 20` means the last 20 total message objects.
+
+It does not always mean:
+
+```text
+10 user messages + 10 model messages
+```
+
+## Solution
+
+Use this mental model:
+
+```text
+MAX_CONTEXT_MESSAGES
+=
+maximum number of message objects sent to Gemini
+```
+
+If the app alternates perfectly between user and model, 20 messages usually means around 10 user messages and 10 model messages.
+
+But errors or special flows can change that.
+
+---
+
+# Memory Status Shows More Context Messages Than Stored Messages
+
+## Problem
+
+The app shows more context messages than actually exist.
+
+Example:
+
+```text
+Stored messages: 6
+Context messages sent to Gemini: 20
+```
+
+## Root Cause
+
+The app prints `MAX_CONTEXT_MESSAGES` directly instead of calculating the real number.
+
+## Solution
+
+Use:
+
+```javascript
+const contextMessages = Math.min(history.length, MAX_CONTEXT_MESSAGES);
+```
+
+This shows the smaller number between:
+
+```text
+stored messages
+maximum context messages
+```
+
+Example:
+
+```text
+Math.min(6, 20) = 6
+Math.min(34, 20) = 20
+```
