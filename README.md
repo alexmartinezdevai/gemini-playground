@@ -2,7 +2,7 @@
 
 A learning project created to understand how to interact with Google's Gemini API using JavaScript and Node.js.
 
-This project is part of my AI Automation roadmap, where I build small applications to learn the fundamentals of AI, APIs, automation, CLI applications, memory, refactoring, modules, and software engineering.
+This project is part of my AI Automation roadmap, where I build small applications to learn the fundamentals of AI, APIs, automation, CLI applications, memory, refactoring, modules, error handling, and software engineering.
 
 ---
 
@@ -16,6 +16,7 @@ The purpose of this project is to learn:
 - Prompt Engineering basics
 - Environment variables
 - Error handling
+- API error handling
 - Terminal applications (CLI)
 - Input validation
 - Conversational loops
@@ -48,6 +49,9 @@ Current features:
 - Use helper functions to separate responsibilities
 - Use a constant for the Gemini model name
 - Split source code into multiple modules
+- Detect Gemini quota errors
+- Show clean user-facing error messages
+- Hide large stack traces from normal CLI output
 
 ---
 
@@ -78,11 +82,13 @@ gemini-playground/
 │   ├── day-03.md
 │   ├── day-04.md
 │   ├── day-05.md
+│   ├── day-06.md
 │   ├── session-summary-day-01.md
 │   ├── session-summary-day-02.md
 │   ├── session-summary-day-03.md
 │   ├── session-summary-day-04.md
-│   └── session-summary-day-05.md
+│   ├── session-summary-day-05.md
+│   └── session-summary-day-06.md
 ├── src/
 │   ├── index.js
 │   ├── cli.js
@@ -111,6 +117,7 @@ Responsibilities:
 - Validate user input
 - Save messages in conversation history
 - Call helper modules
+- Handle application flow errors
 - Close the CLI when the user exits
 
 ---
@@ -124,6 +131,7 @@ Responsibilities:
 - Print the welcome message
 - Normalize user input
 - Detect exit commands
+- Print clean Gemini error messages
 
 Exports:
 
@@ -131,6 +139,7 @@ Exports:
 printWelcomeMessage
 normalizeInput
 isExitCommand
+printGeminiError
 ```
 
 ---
@@ -161,11 +170,13 @@ Responsibilities:
 - Store the Gemini model name
 - Send formatted conversation contents to Gemini
 - Return Gemini's response text
+- Detect quota errors from Gemini
 
 Exports:
 
 ```javascript
 generateGeminiResponse
+isQuotaError
 ```
 
 ---
@@ -250,16 +261,38 @@ Send full conversation context to Gemini
 
 ↓
 
-Print Gemini response
+If Gemini succeeds:
+    print Gemini response
+    save Gemini response in conversation history
 
-↓
-
-Save Gemini response in conversation history
+If Gemini fails:
+    detect the error type
+    print a clean user-facing error message
 
 ↓
 
 Repeat until user exits
 ```
+
+---
+
+## Error Handling
+
+The application now handles Gemini errors more cleanly.
+
+For quota errors:
+
+```text
+⚠️ Gemini quota limit reached. Please wait and try again later.
+```
+
+For unknown errors:
+
+```text
+❌ Failed to generate response. Please try again.
+```
+
+This prevents large stack traces from being shown during normal CLI usage.
 
 ---
 
@@ -303,6 +336,9 @@ During this project I learned:
 - Google GenAI SDK
 - async / await
 - try...catch
+- API error handling
+- HTTP status codes
+- Quota errors
 - readline
 - stdin
 - stdout
@@ -330,6 +366,7 @@ During this project I learned:
 - import
 - Separation of Concerns
 - Project Architecture
+- User-facing error messages
 - Debugging
 - CLI UX
 - Code Review
@@ -347,8 +384,9 @@ During this project I learned:
 - Export conversations to a file
 - Limit conversation history size
 - Summarize old conversation history
-- Improve error messages for API quota limits
 - Add retry logic for temporary API errors
+- Add debug mode for developers
+- Add a `config.js` module
 
 ---
 

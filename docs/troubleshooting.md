@@ -103,6 +103,22 @@ This can happen when too many requests are made in a short period of time or whe
 - Check usage and rate limits in Google AI Studio.
 - Consider using another model or checking billing settings if needed.
 
+## User-Friendly Handling
+
+The application now detects this error with:
+
+```javascript
+export function isQuotaError(error) {
+  return error.status === 429;
+}
+```
+
+And prints:
+
+```text
+⚠️ Gemini quota limit reached. Please wait and try again later.
+```
+
 ## Notes
 
 This is not a JavaScript error.
@@ -535,3 +551,60 @@ Correct:
 ```javascript
 import { normalizeInput } from "./cli.js";
 ```
+
+---
+
+# Raw Stack Trace Printed to User
+
+## Problem
+
+The application prints a large technical stack trace when Gemini fails.
+
+Example:
+
+```text
+ApiError: {"error":{"code":429,"message":"You exceeded your current quota"...}}
+    at throwErrorIfNotOK (...)
+    at async Models.generateContent (...)
+    at async generateGeminiResponse (...)
+```
+
+## Root Cause
+
+The catch block prints the full error object.
+
+Problematic code:
+
+```javascript
+} catch (error) {
+  console.error("Failed to generate response:");
+  console.error(error);
+}
+```
+
+## Solution
+
+Use a user-facing error printer.
+
+```javascript
+} catch (error) {
+  printGeminiError(error, isQuotaError);
+}
+```
+
+And in `cli.js`:
+
+```javascript
+export function printGeminiError(error, isQuotaError) {
+  if (isQuotaError(error)) {
+    console.error("⚠️ Gemini quota limit reached. Please wait and try again later.\n");
+    return;
+  }
+
+  console.error("❌ Failed to generate response. Please try again.\n");
+}
+```
+
+## Notes
+
+Raw stack traces are useful during development, but they are usually not appropriate for normal CLI output.
